@@ -137,23 +137,6 @@ int loopSynchronize(){
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 //LED ERROR SIGNS
 
 
