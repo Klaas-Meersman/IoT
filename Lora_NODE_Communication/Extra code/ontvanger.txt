@@ -1,0 +1,57 @@
+#include <LoRa.h>
+
+void setup() {
+  //Serial.begin(9600);
+  // while (!Serial); 
+  LoRa.begin(868E6);  // Stel dezelfde frequentie in
+  //Serial.println("Ik ben klaar om te luisteren");
+}
+
+
+// Functie om het ID uit de boodschap te extraheren
+String extractID(String message) {
+  int idStart = message.indexOf("0x");  // Zoek naar het begin van het hexadecimale ID
+  int idEnd = message.indexOf(" ", idStart);  // Zoek naar het einde van het ID
+  
+  if (idStart != -1 && idEnd != -1) {
+    // Haal het ID uit de boodschap
+    return message.substring(idStart, idEnd);
+  } else {
+    return "";  // Geen geldig ID gevonden
+  }
+}
+
+// Functie om het antwoord te verzenden
+void sendResponse(String response) {
+  LoRa.beginPacket();
+  LoRa.print(response);   // Stuur het antwoord als een string
+  LoRa.endPacket();
+  //Serial.println("Sent: " + response);  // Print het verzonden bericht in de serial monitor
+}
+
+
+
+void loop() {
+  int packetSize = LoRa.parsePacket();
+  if (packetSize) {
+    String message = "";
+    while (LoRa.available()) {
+      message += (char)LoRa.read();
+    }
+    
+    // Print het ontvangen bericht
+    //Serial.println("Received: " + message);
+    
+    // Extract ID uit het bericht
+    String id = extractID(message);
+    
+    if (id != "") {
+      // Print het ID
+      Serial.println("Extracted ID: " + id);
+      
+      // Construeer het bericht met het ID en stuur het terug
+      String response = id + " - REGISTERED";
+      sendResponse(response);
+    }
+  }
+}

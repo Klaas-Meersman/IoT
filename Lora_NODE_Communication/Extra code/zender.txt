@@ -1,0 +1,51 @@
+#include <LoRa.h>
+
+uint32_t id = 0x55449988; // Hardgecodeerd ID van de zender
+
+void setup() {
+  //Serial.begin(9600);    // Start de serial communicatie
+  // while (!Serial); 
+  LoRa.begin(868E6);     // Stel de frequentie in
+  Serial.println("Zender klaar");
+}
+
+// Functie om te wachten op een antwoord
+void waitForResponse() {
+  String response = "";
+  //Serial.println("Aan het wachten op een antwoord van de Gateway");
+  // Wacht totdat een bericht wordt ontvangen
+  while (true) {  // Oneindige loop totdat we een antwoord krijgen
+    int packetSize = LoRa.parsePacket();
+    if (packetSize) {
+      // Lees het antwoord uit het LoRa-pakket
+      while (LoRa.available()) {
+        response += (char)LoRa.read();
+      }
+      break;  // Stop met wachten als er een antwoord is
+    }
+  }
+
+  // Controleer of het ontvangen antwoord overeenkomt met het verzonden ID
+  if (response.startsWith("0x" + String(id, HEX)) && response.endsWith("- REGISTERED")) {
+    //Serial.println(response);
+  } else {
+    //Serial.println("ID does not match.");
+  }
+}
+
+void loop() {
+  // Construeer het bericht
+  String message = "ID: 0x" + String(id, HEX) + " - Hello Node";
+
+  // Start het LoRa-pakket en stuur het bericht
+  LoRa.beginPacket();
+  LoRa.print(message);   // Stuur het bericht als een string
+  LoRa.endPacket();
+
+  //Serial.println("Sent: " + message);  // Print het bericht naar de serial monitor
+
+  // Wacht op een antwoord van de gateway (onbeperkt)
+  waitForResponse();
+
+  delay(10000);  // Wacht 5 seconden voor de volgende verzending (dit kan ook aangepast worden naar wens)
+}

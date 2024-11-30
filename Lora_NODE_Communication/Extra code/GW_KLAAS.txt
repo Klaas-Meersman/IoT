@@ -1,0 +1,105 @@
+#include <SPI.h>
+#include <LoRa.h>
+#include <Arduino.h>
+
+const int aantalNodes = 10;  // MAX aantal nodes
+const int totalTime = 600;   // Totaal tijdsbereik in seconden (10 minuten = 600 seconden)
+uint32_t registeredNodes[aantalNodes];  // Array voor geregistreerde node ID's
+uint8_t registeredCount = 0;            // Teller voor het aantal geregistreerde nodes
+
+// Functie om te controleren of een node al is geregistreerd
+bool isNodeRegistered(uint32_t id) {
+  for (uint8_t i = 0; i < registeredCount; i++) {
+    if (registeredNodes[i] == id) {
+      return true;  // Node is al geregistreerd
+    }
+  }
+  return false;  // Node is nog niet geregistreerd
+}
+
+// Functie om het ID uit een bericht te extraheren
+uint32_t extractID(String message) {
+  if (message.length() != 8) {  // Controleer of de lengte precies 8 tekens is
+    Serial.println("Invalid ID length.");
+    return 0;
+  }
+
+  char* end;
+  uint32_t id = strtoul(message.c_str(), &end, 16);
+
+  if (*end != '\0') {  // Controleer of het hele bericht is omgezet
+    Serial.println("Invalid ID format.");
+    return 0;
+  }
+  return id;
+}
+
+// Functie om een ACK te verzenden
+void sendACK(uint32_t id, int interval) {
+  Serial.print("Sending ACK to Node 0x");
+  Serial.print(id, HEX);
+  Serial.print(" with interval ");
+  Serial.println(interval);
+
+  LoRa.beginPacket();
+  LoRa.print("ACK for Node 0x");
+  LoRa.print(id, HEX);
+  LoRa.print(", Interval: ");
+  LoRa.print(interval);
+  LoRa.endPacket();
+}
+
+void setup() {
+  Serial.begin(9600);
+  while (!Serial)
+    ;  // Wacht tot de seriële poort klaar is
+  Serial.println("Gateway klaar om nodes te registreren");
+  LoRa.begin(868E6);  // Stel de frequentie in
+}
+
+void loop() {
+  int packetSize = LoRa.parsePacket();
+  if (packetSize) {
+    String message = "";
+    Serial.println("Reading LoRa data:");
+    while (LoRa.available()) {
+      char receivedChar = (char)LoRa.read();
+      Serial.print(receivedChar);  // Debugging
+      message += receivedChar;
+    }
+    Serial.println();  // Nieuwe regel na het volledige bericht
+    Serial.println("Received: " + message);
+
+    // Extract ID uit het bericht
+    uint32_t id = extractID(message);
+
+    // Debugging: Print het ontvangen ID
+    Serial.print("Print ID: 0x");
+    Serial.println(id, HEX);
+
+    // Controleer of de node al geregistreerd is
+    if (id != 0 && !isNodeRegistered(id)) {
+      if (registeredCount >= aantalNodes) {
+        Serial.println("Error: Maximum aantal nodes bereikt!");
+        return;
+      }
+      // Registreer de node door de ID toe te voegen aan de array
+      registeredNodes[registeredCount] = id;
+      registeredCount++;
+
+      Serial.print("Node 0x");
+      Serial.print(id, HEX);
+      Serial.println(" geregistreerd.");
+    } else if (id != 0) {
+      Serial.print("Node 0x");
+      Serial.print(id, HEX);
+      Serial.println(" is al geregistreerd.");
+    } else {
+      Serial.println("Geen geldig ID ontvangen.");
+    }
+
+    // Bereken het interval voor de node op basis van het aantal nodes
+    int interval = totalTime / aantalNodes;
+    sendACK(id, interval);  // Stuur ACK met het interval
+  }
+}

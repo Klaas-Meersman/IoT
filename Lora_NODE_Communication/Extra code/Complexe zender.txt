@@ -1,0 +1,80 @@
+#include <LoRa.h>
+
+const int numIDs = 10;          // Aantal unieke ID's
+uint32_t ids[numIDs];           // Array om de unieke ID's op te slaan
+uint8_t currentIDIndex = 0;     // Index om bij te houden welke ID momenteel verzonden wordt
+bool resend = false;            // Bool om bij te houden of hetzelfde ID opnieuw verzonden moet worden
+
+void generateIDs() {
+  // Genereer 10 unieke ID's (bijv. willekeurig, maar hier incrementeel als voorbeeld)
+  uint32_t baseID = 0x55449900;
+  for (int i = 0; i < numIDs; i++) {
+    ids[i] = baseID + i;
+  }
+}
+
+void setup() {
+  //Serial.begin(9600);           // Start seriële communicatie
+  //while (!Serial);
+  LoRa.begin(868E6);            // Stel de frequentie in
+  //Serial.println("Zender klaar");
+
+  generateIDs();                // Genereer de unieke ID's
+}
+
+String waitForResponse(uint32_t id) {
+  String response = "";
+  //Serial.println("Aan het wachten op een antwoord van de Gateway...");
+  
+  // Wacht onbeperkt op een bericht
+  while (true) {
+    int packetSize = LoRa.parsePacket();
+    if (packetSize) {
+      // Lees het antwoord
+      while (LoRa.available()) {
+        response += (char)LoRa.read();
+      }
+      break;
+    }
+  }
+
+  // Controleer of het ontvangen bericht geldig is
+  if (response.startsWith("0x" + String(id, HEX)) && response.endsWith("- REGISTERED")) {
+    //Serial.println("Bevestiging ontvangen: " + response);
+  } else {
+    //Serial.println("Geen correcte registratie.");
+  }
+
+  return response;
+}
+
+void loop() {
+  // Selecteer het huidige ID om te verzenden
+  uint32_t id = ids[currentIDIndex];
+
+  // Construeer het bericht
+  String message = "ID: 0x" + String(id, HEX) + " - Hello Node";
+
+  // Start het LoRa-pakket en stuur het bericht
+  LoRa.beginPacket();
+  LoRa.print(message);
+  LoRa.endPacket();
+
+  //Serial.println("Verzonden: " + message);
+
+  // Wacht op een antwoord van de gateway
+  waitForResponse(id);
+
+  // Controleer of we hetzelfde ID opnieuw moeten verzenden
+  if (!resend) {
+    resend = true;  // Stel in dat we het ID opnieuw moeten verzenden
+  } else {
+    resend = false;  // Reset voor de volgende ID
+    currentIDIndex++;  // Ga naar de volgende ID
+    if (currentIDIndex >= numIDs) {
+      currentIDIndex = 0;  // Reset naar het eerste ID als alle zijn verstuurd
+    }
+  }
+
+  delay(5000);  // Wacht 5 seconden voor de volgende verzending
+}
