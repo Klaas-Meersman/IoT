@@ -4,12 +4,10 @@
 #include <Wire.h>
 #include "MAX30105.h"  //MAX3010x library
 #include "heartRate.h" //Heart rate calculating algorithm
-#include "SparkFunTMP102.h"
 
 
 MAX30105 heartRateSensor;
 const int GSR = A0; //analog pin 0
-TMP102 tempSensor;
 
 
 //-----------CHANGE THESE PARAMETERS-------------
@@ -64,6 +62,7 @@ void performMeasurementsWithSleepInBetween(){
   }
 }
 
+//-- no need to copy this
 void sendData(){
    //---send data in bufferToSend to the gateway
   for(int i = 0; i < amountOfSensors*measurementUnitsBeforeSend; i++){
@@ -72,7 +71,11 @@ void sendData(){
   //send data to the gateway---
 
 }
+//-- no need to copy this
 
+
+
+//we can get stuck on this becuz no heartrate is measured (can be finicky)
 float measurementUnitHeartRateSensor(byte size){ //a unit is a measurement of x beats averaged
   long lastBeat = 0; // Time at which the last beat occurred
   float beatsPerMinute;
