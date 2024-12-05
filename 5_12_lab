@@ -1,0 +1,185 @@
+#include <Arduino.h>
+//#include <SPI.h>
+#include <LoRa.h>
+#include <ArduinoLowPower.h>
+#include <string>
+
+//#define ss 5
+//#define rst 14
+//#define dio0 2
+
+// put function declarations here:
+//int Errorled = 6;
+
+uint8_t myID = 0xA0;
+
+int sendInterval = 0;
+int dataArray[] = {10, 20, 30, 40, 50};
+int arraySize = sizeof(dataArray) / sizeof(dataArray[0]);
+
+
+void customDelay(unsigned long delayTime) {
+  unsigned long startTime = millis();
+  while (millis() - startTime < delayTime) {
+    // This loop will continue until the desired delay time has passed
+    // You can add other non-blocking operations here if needed
+  }
+}
+
+
+
+
+void initWithGateAuthenticate() {
+  char hexBuffer[2]; // Increased size to 9 to accommodate null terminator
+  sprintf(hexBuffer, "%02X", myID); // Pad with zeros to ensure 8 digits
+  String IDstring = String(hexBuffer);
+  Serial.println(IDstring);
+  LoRa.beginPacket();
+  LoRa.print(IDstring);
+  LoRa.endPacket();
+  Serial.println("Sending done");
+}
+
+
+int waitForGateAndGetInterval() {
+  String response = "";
+  uint8_t ACKID = 0x00;
+  int interval = -1;
+  unsigned long setupOfGateLeft = 0;
+
+  // Wait for a message (unchanged)
+  while (true) {
+    int packetSize = LoRa.parsePacket();
+    if (packetSize) {
+      while (LoRa.available()) {
+        response += (char)LoRa.read();
+      }
+      Serial.println("ACK + interval + setupOfGateLeft: " + response);
+      break;
+    }
+  }
+
+  if (response.length() > 0) {
+    int firstComma = response.indexOf(',');
+    int secondComma = response.indexOf(',', firstComma + 1);
+  
+    if (firstComma != -1 && secondComma != -1) {
+      uint8_t id = (uint8_t)response.substring(0, firstComma).toInt();
+      if (id == myID) {
+        Serial.println("ACK works");
+      }
+      interval = (unsigned long)atol(response.substring(firstComma + 1, secondComma).c_str());
+      setupOfGateLeft = (unsigned long)atol(response.substring(secondComma + 1).c_str());
+    
+      Serial.println("Interval: " + String(interval));
+      Serial.println("SetupOfGateLeft: " + String(setupOfGateLeft));
+    }
+  }
+  Serial.println("We wait " + String(setupOfGateLeft));
+  Serial.println(" until gate is ready");
+  delay(setupOfGateLeft);
+  Serial.println("Gate is ready");
+  return interval;
+}
+
+
+
+// send NODE ID to gate
+int initWithGate(){
+  Serial.println("Initializing with gate");
+  initWithGateAuthenticate();
+  return waitForGateAndGetInterval();
+}
+
+
+
+void SendMeasurementsProper(){
+  //loop nog volledig doen, moet telkens om de zoveel tijd zenden, en nieuwe tijd ontvangen van gate
+  
+  //------debug code------
+  Serial.print("Sending measurements: ");
+  for(int i = 0; i < arraySize; i++){
+    Serial.print(dataArray[i]);
+    Serial.print(" ");
+  }
+  Serial.println();
+  //----------------------
+
+  LoRa.beginPacket();
+  //first let them know who is sending
+  LoRa.write(myID);
+  //send data
+  for (int i = 0; i < arraySize; i++) {
+    LoRa.write(dataArray[i]);
+  }
+  LoRa.endPacket();
+}
+
+void sendMeasurementsString(){
+  char hexBuffer[2]; // Increased size to 9 to accommodate null terminator
+  sprintf(hexBuffer, "%02X", myID); // Pad with zeros to ensure 8 digits
+  String dataString = String(hexBuffer);
+  dataString += ",";
+    
+    // Convert array to string
+    for (int i = 0; i < arraySize; i++) {
+        dataString += String(dataArray[i]);
+        if (i < arraySize - 1) {
+            dataString += ","; // Add delimiter
+        }
+    }
+
+    Serial.print("Sent: ");
+    Serial.println(dataString);
+
+    // Send the string
+    LoRa.beginPacket();
+    LoRa.print(dataString);
+    LoRa.endPacket();
+}
+
+//LED ERROR SIGNS
+//incase LoRa.begin() fails, LED will stay high as long as it fails
+void ErrorLoRaBegin(){
+  //digitalWrite(Errorled, HIGH);
+  customDelay(2000);
+}
+
+void setErrorLEDLow(){
+  //digitalWrite(Errorled, LOW);
+}
+
+//OR GET NODE ID FROM GATE
+
+void setup() {
+  Serial.begin(9600);
+  while (!Serial);
+  //Serial.println("LoRa Sender");
+  //LoRa.setPins(ss, rst, dio0);
+  //pinMode(Errorled, OUTPUT);
+  //setErrorLEDLow();
+
+  while (!LoRa.begin(868E6)) {
+    Serial.println("Starting LoRa failed!");
+    ErrorLoRaBegin();
+  }
+
+  sendInterval = initWithGate();
+  //Serial.println("Intialization complete, send interval is:" + sendInterval);
+
+
+
+  //--------------these might be the so called TAGS for the nodes----------------
+  //Change sync word (0xF3) to match the receiver
+  // The sync word assures you don't get LoRa messages from other LoRa transceivers
+  // ranges from 0-0xFF
+//--------------------------------------------------------------------------------
+
+}
+
+void loop() {
+  Serial.println("I sleep for" + sendInterval);
+  delay(sendInterval);
+  Serial.println(".");
+  sendMeasurementsString();
+}
