@@ -26,15 +26,15 @@ MAX30105 heartRateSensor;
 
 
 //------------------------------------------SOFTWARE declarations--------------------------------
-uint8_t myID = 0xA0;
+uint8_t myID = 0xA0; //=160
 
 
-//EMG related declarations
+//***********EMG related declarations*******************************************
 const int BUFFER_SIZE = 128;
 int circular_buffer[BUFFER_SIZE];
 int data_index, sumEMG;
 int badPostureThreshold;
-//EMG
+//******************************************************************************
 
 //debug code-------------------------------------------
 //int sendInterval = 0;
@@ -57,6 +57,7 @@ const int deltaSendToGateInMilis = deltaSendToGateInMinutes*60000;
 const int deltaMeasurementUnitsInMilis = deltaMeasurementUnitsInSec*1000;
 const byte measurementUnitsBeforeSend = int(deltaSendToGateInMilis/deltaMeasurementUnitsInMilis);
 float bufferToSend[measurementUnitsBeforeSend * amountOfSensors];
+const int bufferSize = sizeof(bufferToSend) / sizeof(bufferToSend[0]);
 //********************************************************************************
 //-------------------------------------------------------------------------------------------------
 
@@ -65,8 +66,8 @@ float bufferToSend[measurementUnitsBeforeSend * amountOfSensors];
 //-----------------FUNCTION prototypes----------------
 
 void initWithGateAuthenticate();
-int waitForInterval();
-int initWithGate();
+unsigned long waitForGateAndGetInterval();
+unsigned long initWithGate();
 void sendMeasurementsProper();
 void sendMeasurementsString();
 
@@ -82,6 +83,8 @@ float measurementUnitMuscleTension(byte);
 float EMGFilter(float);
 int getEnvelop(int);
 bool checkPosture(int);
+
+void customDelay(unsigned long);
 
 //error signs
 void ErrorLoRaBegin();
@@ -111,14 +114,12 @@ void setup() {
   }
 
   deltaSendToGateInMinutes = initWithGate();
-  //Serial.println("Intialization complete, send interval is:" + sendInterval);
+  //Serial.println("Intialization complete, send interval is:" + (String)deltaSendToGateInMinutes);
 
   assert(deltaSendToGateInMinutes != -1);
 }
 
 void loop() {
-  Serial.println("I will send in approximately" + sendInterval + "milliseconds");
-  Serial.println("."); //serial.print don't always work
   performMeasurementsWithSleepInBetween();
   //sendMeasurementsProper();
   sendMeasurementsString():
@@ -127,58 +128,71 @@ void loop() {
 
 
 void initWithGateAuthenticate() {
+  char hexBuffer[2]; 
+  sprintf(hexBuffer, "%02X", myID); 
+  String IDstring = String(hexBuffer);
+
   LoRa.beginPacket();
-  LoRa.write(myID);
+  LoRa.print(IDstring);
   LoRa.endPacket();
   Serial.println("Sending done");
 }
 
 
-int waitForInterval() {
+unsigned long waitForGateAndGetInterval() {
   String response = "";
-  
-  int interval = -1;
+  unsigned long interval = -1;
+  unsigned long setupOfGateLeft = 0;
 
-  // wait for the acklowledgement and interval from gate
+  // Wait for a message (unchanged)
   while (true) {
     int packetSize = LoRa.parsePacket();
     if (packetSize) {
-      // Lees het antwoord
       while (LoRa.available()) {
         response += (char)LoRa.read();
       }
-      Serial.println("ACK + interval:" + response); //this should be my ID
-      
+      Serial.println("ACK + interval + setupOfGateLeft: " + response);
       break;
     }
   }
 
-  //parse the response into receivedID and interval
+  //parse response to get ID, interval and setupOfGateLeft
   if (response.length() > 0) {
-    int commaIndex = response.indexOf(',');
-    if (commaIndex != -1) {
-      uint8_t id = (uint8_t)response.substring(0, commaIndex).toInt();
-      if(id==myID){//could make further running of code depend on this to ensure it works right
-        Serial.println("ACK works");
+    int firstComma = response.indexOf(',');
+    int secondComma = response.indexOf(',', firstComma + 1);
+  
+    if (firstComma != -1 && secondComma != -1) {
+      uint8_t id = (uint8_t)response.substring(0, firstComma).toInt();
+      if (id == myID) {
+        Serial.println("ACK works, id confirmed");
       }
-      interval = response.substring(commaIndex + 1).toInt();
+      interval = (unsigned long)atol(response.substring(firstComma + 1, secondComma).c_str());
+      setupOfGateLeft = (unsigned long)atol(response.substring(secondComma + 1).c_str());
+    
+      Serial.println("Interval: " + String(interval));
+      Serial.println("SetupOfGateLeft: " + String(setupOfGateLeft));
     }
   }
+  //debug code
+  Serial.print("We wait " + String(setupOfGateLeft));
+  Serial.println(" until gate is ready");
+  //
+  customDelay(setupOfGateLeft);
+  Serial.println("Gate is ready");
   return interval;
 }
 
 
-
-// send NODE ID to gate
-int initWithGate(){
+//initiates the node with the gate, returns the interval we need to send data, wait for the gate to be ready
+unsigned long initWithGate(){
   Serial.println("Initializing with gate");
   initWithGateAuthenticate();
-  return waitForInterval();
+  return waitForGateAndGetInterval();
 }
 
 
 //not used atm
-void sendMeasurementsProper(){
+/* void sendMeasurementsProper(){
   //------debug code------
   Serial.print("Sending measurements: ");
   for(int i = 0; i < arraySize; i++){
@@ -197,12 +211,15 @@ void sendMeasurementsProper(){
     LoRa.write(bufferToSend[i]);
   }
   LoRa.endPacket();
-}
+} */
 
 
 //needs parsing at the gateway
 void sendMeasurementsString(){
-  String dataString = "";
+  char hexBuffer[2];
+  sprintf(hexBuffer, "%02X", myID);
+  String dataString = String(hexBuffer);
+  dataString += ","; // Add delimiter
     
     // Convert array to string
     for (int i = 0; i < bufferSize; i++) {
@@ -212,8 +229,10 @@ void sendMeasurementsString(){
         }
     }
 
+    //debug
     Serial.print("Sent: ");
     Serial.println(dataString);
+    //
 
     // Send the string
     LoRa.beginPacket();
@@ -222,14 +241,15 @@ void sendMeasurementsString(){
 }
 
 void performMeasurementsWithSleepInBetween(){
-  //note that the bufferToSend is a float array, so we can store the heart rate and the skin conductance in the same array, thas why we multiply by 2
+  //note that the bufferToSend is a float array, so we can store the heart rate, skin conductance.... in the same array, thas why we multiply by 2,3,4
   //the buffer first stores #measurementUnitsBeforeSend heart rate measurements, then #measurementUnitsBeforeSend skin conductance measurements
   for(int i = 0; i < measurementUnitsBeforeSend; i++){
       bufferToSend[i] = measurementUnitHeartRateSensor(amountOfHeartRateMeasurementsPerUnit);
       bufferToSend[i + measurementUnitsBeforeSend] = measurementUnitSkinConductanceSensor(amountOfSkinConductanceMeasurementsPerUnit);
       bufferToSend[i + 2 * measurementUnitsBeforeSend] = measurementUnitSkinTemperature(amountOfSkinTempMeasurementsPerUnit);
       bufferToSend[i + 3 * measurementUnitsBeforeSend] = measurementUnitMuscleTension(amountOfMuscleTensionMeasurementsPerUnit);
-      LowPower.deepSleep(deltaMeasurementUnitsInMilis);
+      //LowPower.deepSleep(deltaMeasurementUnitsInMilis);
+      customDelay(deltaMeasurementUnitsInMilis);
   }
 }
 
@@ -293,24 +313,17 @@ float measurementUnitMuscleTension(byte size){
 
 
 float measurementUnitMuscleTension(byte size) {
-    int sum = 0;
-    //int badPostureCount = 0;
-    for (int i = 0; i < size; i++) {
-        int sensor_value = analogRead(EMG_INPUT);
-        int signal = EMGFilter(sensor_value);
-        int envelop = getEnvelop(abs(signal));
-        sum += envelop;
-        //if (checkPosture(envelop)) {
-        //    badPostureCount++;
-        //}
+  int badPostureCount = 0;
+  for (int i = 0; i < size; i++) {
+    int sensor_value = analogRead(EMG_INPUT);
+    int signal = EMGFilter(sensor_value);
+    int envelop = getEnvelop(abs(signal));
+    if (checkPosture(envelop)) {
+      badPostureCount++;
+      }
     }
-    float averageEnvelope = sum / size;
-    //float badPosturePercentage = (badPostureCount / (float)size) * 100.0;
-    
-    // Store bad posture percentage in bufferToSend
-    //bufferToSend[3 * measurementUnitsBeforeSend + i] = badPosturePercentage;
-    
-    return averageEnvelope;
+    float badPosturePercentage = (badPostureCount / (float)size) * 100.0;
+    return badPosturePercentage;
 }
 
 //EMG related functions
@@ -321,7 +334,7 @@ bool calibrateEMG() {
   unsigned long startTime = millis();
   while (millis() - startTime < calibrationTime) {
     int readValue = analogRead(EMG_Input);
-        
+
     // Update baseline (minimum) and max values
     if (readValue < baselineValue) {
       baselineValue = readValue;
@@ -338,7 +351,7 @@ bool calibrateEMG() {
     delay(5);
   }
   int signalRange = maxValue - baselineValue;
-  badPostureThreshold = baselineValue + (0.1 * signalRange); //is never actually used
+  badPostureThreshold = baselineValue + (0.1 * signalRange); //is never actually used, was meant to be used in checkPosture instead of 30
   return true; //calibration is done
 }
 
@@ -383,8 +396,6 @@ int getEnvelop(int abs_emg){
 	return (sumEMG/BUFFER_SIZE) * 2;
 }
 
-
-//not needed as is
 bool checkPosture(int envelope) {
     if (envelope > 30) {
         return true; // Bad posture detected
@@ -393,18 +404,20 @@ bool checkPosture(int envelope) {
 }
 
 
-
-
-
-
-
+void customDelay(unsigned long delayTime) {
+  unsigned long startTime = millis();
+  while (millis() - startTime < delayTime) {
+    // This loop will continue until the desired delay time has passed
+    // You can add other non-blocking operations here if needed
+  }
+}
 
 
 //LED ERROR SIGNS
 //incase LoRa.begin() fails, LED will stay high as long as it fails
 void ErrorLoRaBegin(){
   //digitalWrite(Errorled, HIGH);
-  //delay(2000);
+  //customDelay(2000);
 }
 
 void setErrorLEDLow(){

@@ -37,14 +37,12 @@ void initWithGateAuthenticate() {
   LoRa.beginPacket();
   LoRa.print(IDstring);
   LoRa.endPacket();
-  Serial.println("Sending done");
 }
 
 
-int waitForGateAndGetInterval() {
+unsigned long waitForGateAndGetInterval() {
   String response = "";
-  uint8_t ACKID = 0x00;
-  int interval = -1;
+  unsigned longinterval = -1;
   unsigned long setupOfGateLeft = 0;
 
   // Wait for a message (unchanged)
@@ -75,7 +73,7 @@ int waitForGateAndGetInterval() {
       Serial.println("SetupOfGateLeft: " + String(setupOfGateLeft));
     }
   }
-  Serial.println("We wait " + String(setupOfGateLeft));
+  Serial.print("We wait " + String(setupOfGateLeft));
   Serial.println(" until gate is ready");
   delay(setupOfGateLeft);
   Serial.println("Gate is ready");

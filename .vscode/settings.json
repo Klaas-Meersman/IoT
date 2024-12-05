@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "5_12_lab": "cpp",
+        "ostream": "cpp",
+        "cstdint": "cpp"
+    }
+}
