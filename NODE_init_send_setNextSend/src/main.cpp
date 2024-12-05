@@ -8,6 +8,8 @@
 
 
 #define BAUD_RATE 115200
+#define EMG_INPUT A0
+#define GSR_INPUT A1
 
 //#define ss 5
 //#define rst 14
@@ -15,43 +17,46 @@
 
 //int Errorled = 6;
 
-//-----------------HARDWARE declarations----------------
+//------------------------------------------HARDWARE declarations--------------------------------
 MAX30105 heartRateSensor;
 
-const int GSR = A0; //analog pin 0
-//------------------------------------------------------
+//const int GSR = A0; //analog pin 0
+
+//-----------------------------------------------------------------------------------------------
 
 
 //------------------------------------------SOFTWARE declarations--------------------------------
 uint8_t myID = 0xA0;
 
 
-//debug code
+//debug code-------------------------------------------
 //int sendInterval = 0;
 //int dataArray[] = {10, 20, 30, 40, 50};
 //int arraySize = sizeof(dataArray) / sizeof(dataArray[0]);
 //------------------------------------------------------
 
 
-//****CHANGE THESE PARAMETERS (describe timings/#sensors)****
+//**********CHANGE THESE PARAMETERS (describe timings/#sensors)*******************
 const byte amountOfHeartRateMeasurementsPerUnit = 5;
 const byte amountOfSkinConductanceMeasurementsPerUnit = 10;
 const byte amountOfSkinTempMeasurementsPerUnit = 10;
+const byte amountOfMuscleTensionMeasurementsPerUnit = 10;
 const int deltaMeasurementUnitsInSec = 60; // 60 seconds
-const int deltaSendToGateInMinutes = -1; // -> this is set by the gate in function initWithGate()
-const int amountOfSensors = 3;
-//***********************************************************
-//****DON'T CHANGE CALCULATED PARAMETERS****
+int deltaSendToGateInMinutes = -1; // -> this is set by the gate in function initWithGate()
+const int amountOfSensors = 4; //heart rate, skin conductance, skin temperature, muscle tension
+//********************************************************************************
+//*************DON'T CHANGE CALCULATED PARAMETERS*********************************
 const int deltaSendToGateInMilis = deltaSendToGateInMinutes*60000;
 const int deltaMeasurementUnitsInMilis = deltaMeasurementUnitsInSec*1000;
 const byte measurementUnitsBeforeSend = int(deltaSendToGateInMilis/deltaMeasurementUnitsInMilis);
 float bufferToSend[measurementUnitsBeforeSend * amountOfSensors];
-//******************************************
+//********************************************************************************
 //-------------------------------------------------------------------------------------------------
 
 
 
 //-----------------FUNCTION prototypes----------------
+
 void initWithGateAuthenticate();
 int waitForInterval();
 int initWithGate();
@@ -64,6 +69,14 @@ float measurementUnitSkinConductanceSensor(byte);
 float measurementUnitSkinTemperature(byte);
 float measurementUnitMuscleTension(byte);
 
+//EMG related functions
+void calibrateEMG();
+float measurementUnitMuscleTension(byte);
+float EMGFilter(float);
+int getEnvelop(int);
+bool checkPosture(int);
+
+//error signs
 void ErrorLoRaBegin();
 void setErrorLEDLow();
 //------------------------------------------------------
@@ -71,6 +84,9 @@ void setErrorLEDLow();
 
 void setup() {
   Serial.begin(BAUD_RATE);
+  pinmMode(GSR_INPUT, INPUT);
+  pinMode(EMG_INPUT, INPUT);
+  calibrateEMG();
 
   heartRateSensor.begin(Wire, I2C_SPEED_FAST); // Use default I2C port, 400kHz speed
   heartRateSensor.setup();                     // Configure sensor with default settings
@@ -100,7 +116,6 @@ void loop() {
   //sendMeasurementsProper();
   sendMeasurementsString():
 }
-
 
 
 
@@ -155,7 +170,7 @@ int initWithGate(){
 }
 
 
-
+//not used atm
 void sendMeasurementsProper(){
   //------debug code------
   Serial.print("Sending measurements: ");
@@ -205,7 +220,8 @@ void performMeasurementsWithSleepInBetween(){
   for(int i = 0; i < measurementUnitsBeforeSend; i++){
       bufferToSend[i] = measurementUnitHeartRateSensor(amountOfHeartRateMeasurementsPerUnit);
       bufferToSend[i + measurementUnitsBeforeSend] = measurementUnitSkinConductanceSensor(amountOfSkinConductanceMeasurementsPerUnit);
-      bufferToSend[i + 2*measurementUnitsBeforeSend] = measurementUnitSkinTemperature(amountOfSkinTempMeasurementsPerUnit);
+      bufferToSend[i + 2 * measurementUnitsBeforeSend] = measurementUnitSkinTemperature(amountOfSkinTempMeasurementsPerUnit);
+      bufferToSend[i + 3 * measurementUnitsBeforeSend] = measurementUnitMuscleTension(amountOfMuscleTensionMeasurementsPerUnit);
       LowPower.deepSleep(deltaMeasurementUnitsInMilis);
   }
 }
@@ -265,8 +281,114 @@ float measurementUnitMuscleTension(byte size){
   for(int i = 0; i<size;i++){
     //sum += analogRead(GSR);
   }
-  return sum/size;
+  return sum/ size;
 }
+
+
+float measurementUnitMuscleTension(byte size) {
+    int sum = 0;
+    //int badPostureCount = 0;
+    for (int i = 0; i < size; i++) {
+        int sensor_value = analogRead(EMG_INPUT);
+        int signal = EMGFilter(sensor_value);
+        int envelop = getEnvelop(abs(signal));
+        sum += envelop;
+        //if (checkPosture(envelop)) {
+        //    badPostureCount++;
+        //}
+    }
+    float averageEnvelope = sum / size;
+    //float badPosturePercentage = (badPostureCount / (float)size) * 100.0;
+    
+    // Store bad posture percentage in bufferToSend
+    //bufferToSend[3 * measurementUnitsBeforeSend + i] = badPosturePercentage;
+    
+    return averageEnvelope;
+}
+
+//EMG related functions
+bool calibrateEMG() {
+    unsigned long startTime = millis();
+    while (millis() - startTime < calibrationTime) {
+        int readValue = analogRead(EMG_Input);
+        
+        // Update baseline (minimum) and max values
+        if (readValue < baselineValue) {
+            baselineValue = readValue;
+        }
+        if (readValue > maxValue) {
+            maxValue = readValue;
+        }
+        
+        // Display progress
+        Serial.print("Calibrating... Min: ");
+        Serial.print(baselineValue);
+        Serial.print(" Max: ");
+        Serial.println(maxValue);
+        delay(5);
+    }
+    int signalRange = maxValue - baselineValue;
+    badPostureThreshold = baselineValue + (0.1 * signalRange);
+    return true; //calibration is done
+}
+
+float EMGFilter(float input){
+  float output = input;
+  {
+    static float z1, z2; // filter section state
+    float x = output - 0.05159732*z1 - 0.36347401*z2;
+    output = 0.01856301*x + 0.03712602*z1 + 0.01856301*z2;
+    z2 = z1;
+    z1 = x;
+  }
+  {
+    static float z1, z2; // filter section state
+    float x = output - -0.53945795*z1 - 0.39764934*z2;
+    output = 1.00000000*x + -2.00000000*z1 + 1.00000000*z2;
+    z2 = z1;
+    z1 = x;
+  }
+  {
+    static float z1, z2; // filter section state
+    float x = output - 0.47319594*z1 - 0.70744137*z2;
+    output = 1.00000000*x + 2.00000000*z1 + 1.00000000*z2;
+    z2 = z1;
+    z1 = x;
+  }
+  {
+    static float z1, z2; // filter section state
+    float x = output - -1.00211112*z1 - 0.74520226*z2;
+    output = 1.00000000*x + -2.00000000*z1 + 1.00000000*z2;
+    z2 = z1;
+    z1 = x;
+  }
+  return output;
+}
+
+int getEnvelop(int abs_emg){
+	sum -= circular_buffer[data_index];
+	sum += abs_emg;
+	circular_buffer[data_index] = abs_emg;
+	data_index = (data_index + 1) % BUFFER_SIZE;
+	return (sum/BUFFER_SIZE) * 2;
+}
+
+
+//not needed as is
+bool checkPosture(int envelope) {
+    if (envelope > 30) {
+        return true; // Bad posture detected
+    }
+    return false; // Good posture
+}
+
+
+
+
+
+
+
+
 
 //LED ERROR SIGNS
 //incase LoRa.begin() fails, LED will stay high as long as it fails
