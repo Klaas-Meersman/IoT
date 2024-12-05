@@ -20,7 +20,7 @@
 //------------------------------------------HARDWARE declarations--------------------------------
 MAX30105 heartRateSensor;
 
-//const int GSR = A0; //analog pin 0
+//const int GSR = A0; //analog pin 0 -> defines zouden dit moeten al moeten doen
 
 //-----------------------------------------------------------------------------------------------
 
@@ -28,6 +28,13 @@ MAX30105 heartRateSensor;
 //------------------------------------------SOFTWARE declarations--------------------------------
 uint8_t myID = 0xA0;
 
+
+//EMG related declarations
+const int BUFFER_SIZE = 128;
+int circular_buffer[BUFFER_SIZE];
+int data_index, sumEMG;
+int badPostureThreshold;
+//EMG
 
 //debug code-------------------------------------------
 //int sendInterval = 0;
@@ -70,7 +77,7 @@ float measurementUnitSkinTemperature(byte);
 float measurementUnitMuscleTension(byte);
 
 //EMG related functions
-void calibrateEMG();
+bool calibrateEMG();
 float measurementUnitMuscleTension(byte);
 float EMGFilter(float);
 int getEnvelop(int);
@@ -308,28 +315,31 @@ float measurementUnitMuscleTension(byte size) {
 
 //EMG related functions
 bool calibrateEMG() {
-    unsigned long startTime = millis();
-    while (millis() - startTime < calibrationTime) {
-        int readValue = analogRead(EMG_Input);
+  const int calibrationTime = 10000; 
+  int baselineValue = 1023; 
+  int maxValue = 0;  
+  unsigned long startTime = millis();
+  while (millis() - startTime < calibrationTime) {
+    int readValue = analogRead(EMG_Input);
         
-        // Update baseline (minimum) and max values
-        if (readValue < baselineValue) {
-            baselineValue = readValue;
-        }
-        if (readValue > maxValue) {
-            maxValue = readValue;
-        }
-        
-        // Display progress
-        Serial.print("Calibrating... Min: ");
-        Serial.print(baselineValue);
-        Serial.print(" Max: ");
-        Serial.println(maxValue);
-        delay(5);
+    // Update baseline (minimum) and max values
+    if (readValue < baselineValue) {
+      baselineValue = readValue;
     }
-    int signalRange = maxValue - baselineValue;
-    badPostureThreshold = baselineValue + (0.1 * signalRange);
-    return true; //calibration is done
+    if (readValue > maxValue) {
+      maxValue = readValue;
+    }
+        
+    // Display progress
+    Serial.print("Calibrating... Min: ");
+    Serial.print(baselineValue);
+    Serial.print(" Max: ");
+    Serial.println(maxValue);
+    delay(5);
+  }
+  int signalRange = maxValue - baselineValue;
+  badPostureThreshold = baselineValue + (0.1 * signalRange); //is never actually used
+  return true; //calibration is done
 }
 
 float EMGFilter(float input){
@@ -366,11 +376,11 @@ float EMGFilter(float input){
 }
 
 int getEnvelop(int abs_emg){
-	sum -= circular_buffer[data_index];
-	sum += abs_emg;
+	sumEMG -= circular_buffer[data_index];
+	sumEMG += abs_emg;
 	circular_buffer[data_index] = abs_emg;
 	data_index = (data_index + 1) % BUFFER_SIZE;
-	return (sum/BUFFER_SIZE) * 2;
+	return (sumEMG/BUFFER_SIZE) * 2;
 }
 
 
