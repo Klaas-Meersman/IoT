@@ -65,7 +65,7 @@ const int bufferSize = sizeof(bufferToSend) / sizeof(bufferToSend[0]);
 
 //-----------------FUNCTION prototypes----------------
 
-void initWithGateAuthenticate();
+void signUpToGate();
 unsigned long waitForGateAndGetInterval();
 unsigned long initWithGate();
 void sendMeasurementsProper();
@@ -127,7 +127,7 @@ void loop() {
 
 
 
-void initWithGateAuthenticate() {
+void signUpToGate() {
   char hexBuffer[2]; 
   sprintf(hexBuffer, "%02X", myID); 
   String IDstring = String(hexBuffer);
@@ -186,7 +186,7 @@ unsigned long waitForGateAndGetInterval() {
 //initiates the node with the gate, returns the interval we need to send data, wait for the gate to be ready
 unsigned long initWithGate(){
   Serial.println("Initializing with gate");
-  initWithGateAuthenticate();
+  signUpToGate();
   return waitForGateAndGetInterval();
 }
 
