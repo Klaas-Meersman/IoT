@@ -45,12 +45,12 @@ int badPostureThreshold;
 
 //**********CHANGE THESE PARAMETERS (describe timings/#sensors)*******************
 const byte amountOfHeartRateMeasurementsPerUnit = 5;
-const byte amountOfSkinConductanceMeasurementsPerUnit = 10;
-const byte amountOfSkinTempMeasurementsPerUnit = 10;
-const byte amountOfMuscleTensionMeasurementsPerUnit = 10;
-const int deltaMeasurementUnitsInSec = 2; // 60 seconds
+const byte amountOfSkinConductanceMeasurementsPerUnit = 1;
+const byte amountOfSkinTempMeasurementsPerUnit = 1;
+const byte amountOfMuscleTensionMeasurementsPerUnit = 1;
+const int deltaMeasurementUnitsInSec = 10; // seconds
 unsigned long deltaSendToGateInMilis = -1; //this is set by initialziing with gate
-const int amountOfSensors = 2; //heart rate, skin conductance, skin temperature, muscle tension
+const int amountOfSensors = 3; //heart rate, skin conductance, skin temperature, muscle tension
 //********************************************************************************
 //*************DON'T CHANGE CALCULATED PARAMETERS*********************************
 const int MAXBufferSize = 240;
@@ -97,7 +97,7 @@ void setup() {
   Serial.begin(BAUD_RATE);
   pinMode(GSR_INPUT, INPUT);
   pinMode(EMG_INPUT, INPUT);
-  //calibrateEMG(); ---------------------> heractiveren
+  calibrateEMG(); //---------------------> heractiveren
 
   heartRateSensor.begin(Wire, I2C_SPEED_FAST); // Use default I2C port, 400kHz speed
   heartRateSensor.setup();                     // Configure sensor with default settings
@@ -188,8 +188,8 @@ unsigned long waitForGateAndGetInterval() {
   //debug code
   Serial.print("We wait " + String(setupOfGateLeft));
   Serial.println(" until gate is ready");
-  //
-  customDelay(setupOfGateLeft);
+  LowPower.deepSleep(setupOfGateLeft);
+  //customDelay(setupOfGateLeft);
   Serial.println("Gate is ready");
   return interval;
 }
@@ -264,8 +264,10 @@ void performMeasurementsWithSleepInBetween(){
 
       //bufferToSend[i] = measurementUnitHeartRateSensor(amountOfHeartRateMeasurementsPerUnit);
       bufferToSend[i + 1 * measurementUnitsBeforeSend] = measurementUnitSkinTemperature(amountOfSkinTempMeasurementsPerUnit);
+      bufferToSend[i + 2 * measurementUnitsBeforeSend] = measurementUnitMuscleTension(amountOfMuscleTensionMeasurementsPerUnit);
 
-      customDelay(deltaMeasurementUnitsInMilis);
+      LowPower.deepSleep(deltaMeasurementUnitsInMilis);
+      //customDelay(deltaMeasurementUnitsInMilis);
   }
 }
 
@@ -319,7 +321,7 @@ float measurementUnitSkinTemperature(byte size){
     sum += heartRateSensor.readTemperature()-5;
     //Serial.println("Sum: "+ String(sum));
   }
-  //Serial.println("Temperature measured: " + String(sum/size));
+  Serial.println("Temperature measured: " + String(sum/size));
   return sum/size;
 }
 
@@ -344,6 +346,8 @@ bool calibrateEMG() {
   int baselineValue = 1023; 
   int maxValue = 0;  
   unsigned long startTime = millis();
+  Serial.print("Calibrating EMG for " + String(calibrationTime/1000));
+  Serial.println("seconds.");
   while (millis() - startTime < calibrationTime) {
     int readValue = analogRead(EMG_INPUT);
 
@@ -356,8 +360,7 @@ bool calibrateEMG() {
     }
         
     // Display progress
-    Serial.print("Calibrating EMG for " + String(calibrationTime/1000));
-    Serial.println("seconds.");
+    
     //Serial.print("Calibrating... Min: ");
     //Serial.print(baselineValue);
     //Serial.print(" Max: ");
