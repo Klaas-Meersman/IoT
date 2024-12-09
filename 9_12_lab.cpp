@@ -33,7 +33,7 @@ int badPostureThreshold;
 //******************************************************************************
 
 //*************Heartrate related************************************************
-long waistedTimeMeasuringHR;
+unsigned long waistedTimeMeasuringHR;
 //******************************************************************************
 
 //**********CHANGE THESE PARAMETERS (describe timings/#sensors)*******************
@@ -53,8 +53,6 @@ float bufferToSend[MAXBufferSize];
 int bufferSize = measurementUnitsBeforeSend * amountOfSensors;
 //********************************************************************************
 //-------------------------------------------------------------------------------------------------
-
-
 
 //-----------------FUNCTION prototypes----------------
 void signUpToGate();
@@ -245,7 +243,7 @@ void performMeasurementsWithSleepInBetween(){
       bufferToSend[i + 3 * measurementUnitsBeforeSend] = measurementUnitMuscleTension(amountOfMuscleTensionMeasurementsPerUnit);
 
       LowPower.deepSleep(deltaMeasurementUnitsInMilis -  waistedTimeMeasuringHR);
-      customDelay(deltaMeasurementUnitsInMilis- waistedTimeMeasuringHR );
+      //customDelay(deltaMeasurementUnitsInMilis- waistedTimeMeasuringHR );
   }
 }
 
