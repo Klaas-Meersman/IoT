@@ -2,37 +2,42 @@
 #include <LoRa.h>
 #include <Arduino.h>
 
-const int aantalNodes = 10;  // MAX aantal nodes
-uint8_t registeredNodes[aantalNodes];  // Array voor geregistreerde node ID's
-uint8_t registeredCount = 0;           // Teller voor het aantal geregistreerde nodes
-String interval = "2000"; // Tijd tussen de nodes
+// Hardware-pinnen voor de LoRa-module
+#define NSS 6
+#define RST 5
+#define DIO0 3
+
+//Ontvangen van Gui
+const int maxAantalNodes = 10;  // MAX aantal nodes
+unsigned long interval = 30000; // Tijd tussen de nodes
+unsigned long duration = 20000; // Initialisatietijd
+
+uint8_t registeredNodes[maxAantalNodes];  // Array voor geregistreerde node ID's
+uint8_t registeredNumberOfNodes = 0;           // Teller voor het aantal geregistreerde nodes
+const int aantalOntvangenData = 30;    // Hoeveel data elke node kan ontvangen
 
 struct NodeData {
-  uint8_t id;              // ID van de node
-  uint8_t data[5];         // Data van de node (bijvoorbeeld 10, 20, 30, 40, 50)
+  uint8_t id;                    // ID van de node
+  String data[aantalOntvangenData]; // Data van de node (als strings)
+  uint8_t currentIndex = 0;       // Huidige vrije index in de data array
 };
 
-NodeData nodeData[aantalNodes];  // Array om gegevens voor alle nodes op te slaan
+NodeData nodeData[maxAantalNodes];  // Array om gegevens voor alle nodes op te slaan
 
-void storeNodeData(uint8_t id, uint8_t* payload, size_t length) {
-  for (uint8_t i = 0; i < registeredCount; i++) {
+void storeNodeData(uint8_t id, String* payload, size_t length) {
+  for (uint8_t i = 0; i < registeredNumberOfNodes; i++) {
     if (nodeData[i].id == id) {
-      // Kopieer de data naar de node's opslag
-      memcpy(nodeData[i].data, payload, length);
-      Serial.print("Data opgeslagen voor Node 0x");
-      Serial.print(id, HEX);  // Print de node ID in hexadecimale vorm
-      Serial.print(": ");
-
-      // Print de opgeslagen data in hexadecimale vorm
-      for (size_t j = 0; j < length; j++) {
-        Serial.print("0x");
-        if (payload[j] < 0x10) {
-          Serial.print("0");  // Voeg een extra 0 toe voor eenheidscijfers
-        }
-        Serial.print(payload[j], HEX);  // Print de byte als hexadecimaal
-        Serial.print(" ");
+      // Voeg de nieuwe data toe vanaf de huidige vrije positie
+      for (size_t j = 0; j < length && nodeData[i].currentIndex < aantalOntvangenData; j++) {
+        nodeData[i].data[nodeData[i].currentIndex] = payload[j];
+        Serial.print("Node 0x");
+        Serial.print(id, HEX);
+        Serial.print(" positie ");
+        Serial.print(nodeData[i].currentIndex);
+        Serial.print(" data is ");
+        Serial.println(payload[j]);
+        nodeData[i].currentIndex++;
       }
-      Serial.println();
       return;
     }
   }
@@ -44,7 +49,7 @@ void loopInitialize();
 
 // Functie om te controleren of een node al is geregistreerd
 bool isNodeRegistered(uint8_t id) {
-  for (uint8_t i = 0; i < registeredCount; i++) {
+  for (uint8_t i = 0; i < registeredNumberOfNodes; i++) {
     if (registeredNodes[i] == id) {
       return true;  // Node is al geregistreerd
     }
@@ -53,7 +58,7 @@ bool isNodeRegistered(uint8_t id) {
 }
 
 // Functie om een ACK te verzenden
-void sendACK(uint8_t id, String interval, long remainingTime) {
+void sendACK(uint8_t id, unsigned long interval, long remainingTime) {
   String data = String(id) + "," + String(interval) + "," + String(remainingTime);  // Voeg resterende tijd toe aan de string
   LoRa.beginPacket();
   LoRa.print(data);  // Stuur de string over LoRa
@@ -71,13 +76,15 @@ void setup() {
   Serial.begin(9600);
   while (!Serial);  // Wacht tot de seriële poort klaar is
   Serial.println("Gateway klaar om nodes te registreren");
+
+  // Pininstellingen voor LoRa
+  //LoRa.setPins(NSS, RST, DIO0);
   LoRa.begin(868E6);  // Stel de frequentie in
   loopInitialize();
 }
 
 void loopInitialize() {
   unsigned long startMillis = millis();  // Begin de timer
-  unsigned long duration = 30000;        // Initialisatietijd
   Serial.println("WE GAAN INITTTTS");
 
   while (millis() - startMillis < duration) {
@@ -97,18 +104,18 @@ void loopInitialize() {
 
       // Controleer of de node al geregistreerd is
       if (!isNodeRegistered(id)) {
-        if (registeredCount >= aantalNodes) {
+        if (registeredNumberOfNodes >= maxAantalNodes) {
           Serial.println("Error: Maximum aantal nodes bereikt!");
           return;
         }
 
         // Registreer de node door de ID toe te voegen aan de array
-        registeredNodes[registeredCount] = id;
+        registeredNodes[registeredNumberOfNodes] = id;
 
         // Vul de `NodeData`-struct met het ID
-        nodeData[registeredCount].id = id;
+        nodeData[registeredNumberOfNodes].id = id;
 
-        registeredCount++;
+        registeredNumberOfNodes++;
 
         Serial.print("Node 0x");
         Serial.print(id, HEX);
@@ -128,7 +135,6 @@ void loopInitialize() {
   }
   Serial.println("#########################################Initialisatie voltooid. Ga door naar de normale loop.#########################################");
 }
-
 
 
 void loop() {
@@ -168,34 +174,23 @@ void loop() {
 
   // Haal de data op na de komma
   String dataStr = response.substring(commaIndex + 1);  // Alles na de eerste komma
-  String dataArray[5];  // Array voor de data bytes
+  String dataArray[aantalOntvangenData];  // Array voor de data strings
   int dataIndex = 0;
 
   // Splits de data op basis van komma's
-  while (dataStr.length() > 0 && dataIndex < 5) {
+  while (dataStr.length() > 0 && dataIndex < aantalOntvangenData) {
     commaIndex = dataStr.indexOf(',');
     if (commaIndex == -1) {
       // Als er geen komma meer is, neem de rest van de string
       dataArray[dataIndex] = dataStr;
-      break;
+      dataStr = "";  // Leeg de string
+    } else {
+      dataArray[dataIndex] = dataStr.substring(0, commaIndex);
+      dataStr = dataStr.substring(commaIndex + 1);  // Verwijder de verwerkte data van de string
     }
-    dataArray[dataIndex] = dataStr.substring(0, commaIndex);
-    dataStr = dataStr.substring(commaIndex + 1);  // Verwijder de verwerkte data van de string
     dataIndex++;
   }
 
-  // Zet de data om naar uint8_t
-  uint8_t payload[5];
-  for (int i = 0; i < 5; i++) {
-    if (i < dataIndex) {
-      payload[i] = strtol(dataArray[i].c_str(), NULL, 16);
-      Serial.print("Data byte ");
-      Serial.print(i);
-      Serial.print(": ");
-      Serial.println(payload[i], HEX);
-    }
-  }
-
   // Sla de data op bij de bijbehorende node
-  storeNodeData(id, payload, 5);
+  storeNodeData(id, dataArray, dataIndex);
 }
