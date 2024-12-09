@@ -19,15 +19,11 @@
 
 //------------------------------------------HARDWARE declarations--------------------------------
 MAX30105 heartRateSensor;
-
-//const int GSR = A0; //analog pin 0 -> defines zouden dit moeten al moeten doen
-
 //-----------------------------------------------------------------------------------------------
 
 
 //------------------------------------------SOFTWARE declarations--------------------------------
 uint8_t myID = 0xA0; //=160
-
 
 //***********EMG related declarations*******************************************
 const int BUFFER_SIZE = 128;
@@ -36,21 +32,18 @@ int data_index, sumEMG;
 int badPostureThreshold;
 //******************************************************************************
 
-//debug code-------------------------------------------
-//int sendInterval = 0;
-//int dataArray[] = {10, 20, 30, 40, 50};
-//int arraySize = sizeof(dataArray) / sizeof(dataArray[0]);
-//------------------------------------------------------
-
+//*************Heartrate related************************************************
+long waistedTimeMeasuringHR;
+//******************************************************************************
 
 //**********CHANGE THESE PARAMETERS (describe timings/#sensors)*******************
 const byte amountOfHeartRateMeasurementsPerUnit = 5;
 const byte amountOfSkinConductanceMeasurementsPerUnit = 1;
 const byte amountOfSkinTempMeasurementsPerUnit = 1;
 const byte amountOfMuscleTensionMeasurementsPerUnit = 1;
-const int deltaMeasurementUnitsInSec = 10; // seconds
+const int deltaMeasurementUnitsInSec = 30; // seconds
 unsigned long deltaSendToGateInMilis = -1; //this is set by initialziing with gate
-const int amountOfSensors = 3; //heart rate, skin conductance, skin temperature, muscle tension
+const int amountOfSensors = 4; //heart rate, skin conductance, skin temperature, muscle tension
 //********************************************************************************
 //*************DON'T CHANGE CALCULATED PARAMETERS*********************************
 const int MAXBufferSize = 240;
@@ -64,7 +57,6 @@ int bufferSize = measurementUnitsBeforeSend * amountOfSensors;
 
 
 //-----------------FUNCTION prototypes----------------
-
 void signUpToGate();
 unsigned long waitForGateAndGetInterval();
 unsigned long initWithGate();
@@ -97,7 +89,7 @@ void setup() {
   Serial.begin(BAUD_RATE);
   pinMode(GSR_INPUT, INPUT);
   pinMode(EMG_INPUT, INPUT);
-  calibrateEMG(); //---------------------> heractiveren
+  calibrateEMG(); 
 
   heartRateSensor.begin(Wire, I2C_SPEED_FAST); // Use default I2C port, 400kHz speed
   heartRateSensor.setup();                     // Configure sensor with default settings
@@ -117,8 +109,6 @@ void setup() {
   deltaSendToGateInMilis = initWithGate();
   //Serial.println("Intialization complete, send interval is:" + (String)deltaSendToGateInMinutes);
   calculateParameters();
-
-  //assert(deltaSendToGateInMinutes != -1);
 }
 
 void loop() {
@@ -127,13 +117,12 @@ void loop() {
   sendMeasurementsString();
 }
 
-
 void calculateParameters(){
   deltaMeasurementUnitsInMilis = deltaMeasurementUnitsInSec*1000;
   measurementUnitsBeforeSend = int(deltaSendToGateInMilis/deltaMeasurementUnitsInMilis);
   bufferSize = measurementUnitsBeforeSend * amountOfSensors;
   Serial.println("The buffer size is " + String(bufferSize));
-  Serial.println("Delta measurements is" + String(deltaMeasurementUnitsInMilis));
+  Serial.println("Delta measurements is " + String(deltaMeasurementUnitsInMilis));
   Serial.println(deltaSendToGateInMilis);
 }
 
@@ -185,7 +174,6 @@ unsigned long waitForGateAndGetInterval() {
       Serial.println("SetupOfGateLeft: " + String(setupOfGateLeft));
     }
   }
-  //debug code
   Serial.print("We wait " + String(setupOfGateLeft));
   Serial.println(" until gate is ready");
   LowPower.deepSleep(setupOfGateLeft);
@@ -201,7 +189,6 @@ unsigned long initWithGate(){
   signUpToGate();
   return waitForGateAndGetInterval();
 }
-
 
 //not used atm
 /* void sendMeasurementsProper(){
@@ -240,12 +227,8 @@ void sendMeasurementsString(){
             dataString += ","; // Add delimiter
         }
     }
-
-    //debug
     Serial.print("Sent: ");
     Serial.println(dataString);
-    //
-
     // Send the string
     LoRa.beginPacket();
     LoRa.print(dataString);
@@ -256,26 +239,24 @@ void performMeasurementsWithSleepInBetween(){
   //note that the bufferToSend is a float array, so we can store the heart rate, skin conductance.... in the same array, thas why we multiply by 2,3,4
   //the buffer first stores #measurementUnitsBeforeSend heart rate measurements, then #measurementUnitsBeforeSend skin conductance measurements
   for(int i = 0; i < measurementUnitsBeforeSend; i++){
-      //bufferToSend[i] = measurementUnitHeartRateSensor(amountOfHeartRateMeasurementsPerUnit);
-      //bufferToSend[i + measurementUnitsBeforeSend] = measurementUnitSkinConductanceSensor(amountOfSkinConductanceMeasurementsPerUnit);
-      //bufferToSend[i + 2 * measurementUnitsBeforeSend] = measurementUnitSkinTemperature(amountOfSkinTempMeasurementsPerUnit);
-      //bufferToSend[i + 3 * measurementUnitsBeforeSend] = measurementUnitMuscleTension(amountOfMuscleTensionMeasurementsPerUnit);
-      //LowPower.deepSleep(deltaMeasurementUnitsInMilis);
+      bufferToSend[i] = measurementUnitHeartRateSensor(amountOfHeartRateMeasurementsPerUnit);
+      bufferToSend[i + measurementUnitsBeforeSend] = measurementUnitSkinConductanceSensor(amountOfSkinConductanceMeasurementsPerUnit);
+      bufferToSend[i + 2 * measurementUnitsBeforeSend] = measurementUnitSkinTemperature(amountOfSkinTempMeasurementsPerUnit);
+      bufferToSend[i + 3 * measurementUnitsBeforeSend] = measurementUnitMuscleTension(amountOfMuscleTensionMeasurementsPerUnit);
 
-      //bufferToSend[i] = measurementUnitHeartRateSensor(amountOfHeartRateMeasurementsPerUnit);
-      bufferToSend[i + 1 * measurementUnitsBeforeSend] = measurementUnitSkinTemperature(amountOfSkinTempMeasurementsPerUnit);
-      bufferToSend[i + 2 * measurementUnitsBeforeSend] = measurementUnitMuscleTension(amountOfMuscleTensionMeasurementsPerUnit);
-
-      LowPower.deepSleep(deltaMeasurementUnitsInMilis);
-      //customDelay(deltaMeasurementUnitsInMilis);
+      LowPower.deepSleep(deltaMeasurementUnitsInMilis -  waistedTimeMeasuringHR);
+      customDelay(deltaMeasurementUnitsInMilis- waistedTimeMeasuringHR );
   }
 }
 
-
 //we can get stuck on this becuz no heartrate is measured (can be finicky)
-//maybe add a timeout to this function, we send 0 if we dont get a heartrate in time
-//we need to sum up the time we are delayed so we can send the data that much earlier
+//timeout to this function, we send 0 if we dont get a heartrate in time
+//we need to measure the time we are delayed by measuring the heartrate so we can sleep less in between measurements to send at right times
+//we only do this for heartrate as it takes significantly longer than any other measurement, it also varies in time
 float measurementUnitHeartRateSensor(byte size){ //a unit is a measurement of x beats averaged
+  waistedTimeMeasuringHR = 0;
+  long waistedTimeMeasuring_1 = millis();
+  int measuringRestarted = 0;
   long lastBeat = 0; // Time at which the last beat occurred
   float beatsPerMinute;
   float sum;
@@ -288,6 +269,7 @@ float measurementUnitHeartRateSensor(byte size){ //a unit is a measurement of x 
         lastBeat = millis();
 
         beatsPerMinute = 60 / (delta / 1000.0); 
+        Serial.println("Beats/min" + String(beatsPerMinute));
       
         if (beatsPerMinute < 255 && beatsPerMinute > 20){
           sum += beatsPerMinute;
@@ -297,9 +279,25 @@ float measurementUnitHeartRateSensor(byte size){ //a unit is a measurement of x 
       }
     }else{ //in case we dont detect x(size) beats in a row, we reset and measure again for x(size) beats.
       beatsPerMinute= 0;
+      if(i>0){
+        measuringRestarted++;
+      }
       i=0;
+      
+      long waistedTimeMeausring_2 = millis();
+      
+      //to avoid infinite measuring when no heartrate detected
+      if(waistedTimeMeausring_2 - waistedTimeMeasuring_1 > 10000 || measuringRestarted > 3){
+        Serial.println("Didn't detect heartrate");
+        waistedTimeMeasuringHR = millis() - waistedTimeMeasuring_1;
+        measuringRestarted=0;
+        return 0;
+      }
     }
   }
+  //set waistedTimeMeasuring so we can substract it from the sleep time, so we still send at right moment
+  waistedTimeMeasuringHR = millis() - waistedTimeMeasuring_1;
+  Serial.println("Sleeping less: " + String(waistedTimeMeasuringHR));
   return sum/size;
 }
 
@@ -314,12 +312,9 @@ float measurementUnitSkinConductanceSensor(byte size){
 
 //not sure if this works perfectly
 float measurementUnitSkinTemperature(byte size){
-  //Serial.println("Size: " + String(size));
   float sum;
   for(int i = 0; i<size;i++){
-    //Serial.println(String(heartRateSensor.readTemperature()));
     sum += heartRateSensor.readTemperature()-5;
-    //Serial.println("Sum: "+ String(sum));
   }
   Serial.println("Temperature measured: " + String(sum/size));
   return sum/size;
@@ -358,9 +353,8 @@ bool calibrateEMG() {
     if (readValue > maxValue) {
       maxValue = readValue;
     }
-        
+
     // Display progress
-    
     //Serial.print("Calibrating... Min: ");
     //Serial.print(baselineValue);
     //Serial.print(" Max: ");
@@ -424,8 +418,6 @@ bool checkPosture(int envelope) {
 void customDelay(unsigned long delayTime) {
   unsigned long startTime = millis();
   while (millis() - startTime < delayTime) {
-    // This loop will continue until the desired delay time has passed
-    // You can add other non-blocking operations here if needed
   }
 }
 
