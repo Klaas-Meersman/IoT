@@ -320,7 +320,7 @@ float measurementUnitSkinConductanceSensor(byte size){
 float measurementUnitSkinTemperature(byte size){
   float sum;
   for(int i = 0; i<size;i++){
-    sum += heartRateSensor.readTemperature()-5;
+    sum += heartRateSensor.readTemperature()*0.8;
   }
   Serial.println("Temperature measured: " + String(sum/size));
   return sum/size;
