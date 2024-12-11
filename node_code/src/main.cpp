@@ -101,8 +101,6 @@ void setup() {
   while (!Serial);
   Serial.println("LoRa Sender");
   //LoRa.setPins(ss, rst, dio0);
-  //pinMode(Errorled, OUTPUT);
-  //setErrorLEDLow();
 
   while (!LoRa.begin(868E6)) {
     Serial.println("Starting LoRa failed!");
@@ -342,7 +340,7 @@ float measurementUnitMuscleTension(byte size) {
 }
 
 //EMG related functions
-void calibrateSensor() {
+void calibrateEMG() {
     unsigned long startTime = millis();
     int filteredSignal;
     int evelopeValue;
@@ -440,11 +438,11 @@ void errorLoRaBegin(){
 }
 
 void LEDLow(){
-  digitalWrite(Errorled, HIGH);
+  digitalWrite(errorLED, HIGH);
 }
 
 void LEDHigh(){
-  digitalWrite(Errorled, LOW);
+  digitalWrite(errorLED, LOW);
 }
 
 void LEDsendingMessage(){
