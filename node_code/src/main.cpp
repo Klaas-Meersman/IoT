@@ -43,7 +43,7 @@ const byte amountOfHeartRateMeasurementsPerUnit = 5;
 const byte amountOfSkinConductanceMeasurementsPerUnit = 1;
 const byte amountOfSkinTempMeasurementsPerUnit = 1;
 const byte amountOfMuscleTensionMeasurementsPerUnit = 1;
-const int deltaMeasurementUnitsInSec = 60; // seconds
+const int deltaMeasurementUnitsInSec = 6; // seconds //default: 60sec
 unsigned long deltaSendToGateInMilis = -1; //this is set by initialziing with gate
 const int amountOfSensors = 5; //heart rate, skin conductance, skin temperature, muscle tension
 //********************************************************************************
@@ -246,6 +246,7 @@ void performMeasurementsWithSleepInBetween(){
 
       //LowPower.deepSleep(deltaMeasurementUnitsInMilis -  waistedTimeMeasuringHR);
       customDelay(deltaMeasurementUnitsInMilis- waistedTimeMeasuringHR );
+      
   }
 }
 
