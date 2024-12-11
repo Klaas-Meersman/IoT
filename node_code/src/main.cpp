@@ -31,6 +31,7 @@ const int BUFFER_SIZE = 128;
 int circular_buffer[BUFFER_SIZE];
 int data_index, sumEMG;
 int badPostureThreshold;
+const int calibrationTime = 10000;
 //******************************************************************************
 
 //*************Heartrate related************************************************
@@ -44,7 +45,7 @@ const byte amountOfSkinTempMeasurementsPerUnit = 1;
 const byte amountOfMuscleTensionMeasurementsPerUnit = 1;
 const int deltaMeasurementUnitsInSec = 30; // seconds
 unsigned long deltaSendToGateInMilis = -1; //this is set by initialziing with gate
-const int amountOfSensors = 4; //heart rate, skin conductance, skin temperature, muscle tension
+const int amountOfSensors = 5; //heart rate, skin conductance, skin temperature, muscle tension
 //********************************************************************************
 //*************DON'T CHANGE CALCULATED PARAMETERS*********************************
 const int MAXBufferSize = 240;
@@ -88,7 +89,7 @@ void setup() {
   Serial.begin(BAUD_RATE);
   pinMode(GSR_INPUT, INPUT);
   pinMode(EMG_INPUT, INPUT);
-  calibrateEMG(); 
+  //calibrateEMG(); 
 
   heartRateSensor.begin(Wire, I2C_SPEED_FAST); // Use default I2C port, 400kHz speed
   heartRateSensor.setup();                     // Configure sensor with default settings
@@ -241,7 +242,7 @@ void performMeasurementsWithSleepInBetween(){
       bufferToSend[i] = measurementUnitHeartRateSensor(amountOfHeartRateMeasurementsPerUnit);
       bufferToSend[i + measurementUnitsBeforeSend] = measurementUnitSkinConductanceSensor(amountOfSkinConductanceMeasurementsPerUnit);
       bufferToSend[i + 2 * measurementUnitsBeforeSend] = measurementUnitSkinTemperature(amountOfSkinTempMeasurementsPerUnit);
-      //bufferToSend[i + 3 * measurementUnitsBeforeSend] = measurementUnitMuscleTension(amountOfMuscleTensionMeasurementsPerUnit);
+      bufferToSend[i + 3 * measurementUnitsBeforeSend] = measurementUnitMuscleTension(amountOfMuscleTensionMeasurementsPerUnit);
 
       LowPower.deepSleep(deltaMeasurementUnitsInMilis -  waistedTimeMeasuringHR);
       //customDelay(deltaMeasurementUnitsInMilis- waistedTimeMeasuringHR );
@@ -342,7 +343,7 @@ void calibrateSensor() {
     int minEvelope = 9999;
     int maxEvelope = 0;
     while (millis() - startTime < calibrationTime) {
-        int rawValue = analogRead(EMG_Input);
+        int rawValue = analogRead(EMG_INPUT);
 
         filteredSignal = EMGFilter(rawValue);
         evelopeValue = getEnvelop(abs(filteredSignal));
