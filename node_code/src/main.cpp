@@ -98,7 +98,7 @@ void setup() {
   heartRateSensor.setup();                     // Configure sensor with default settings
   heartRateSensor.setPulseAmplitudeRed(0x0A);  // Turn Red LED to low to indicate sensor is running
   
-  while (!Serial);
+  //while (!Serial);
   Serial.println("LoRa Sender");
   //LoRa.setPins(ss, rst, dio0);
 
@@ -447,9 +447,9 @@ void LEDHigh(){
 
 void LEDsendingMessage(){
   for(int i = 0; i < 5; i++){
-    LEDLow();
-    customDelay(100);
     LEDHigh();
+    customDelay(100);
+    LEDLow();
     customDelay(100);
   }
 }
