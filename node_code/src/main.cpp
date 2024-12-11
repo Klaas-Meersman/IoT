@@ -8,8 +8,9 @@
 
 
 #define BAUD_RATE 115200
-#define EMG_INPUT A0
-#define GSR_INPUT A1
+#define GSR_INPUT A0
+#define EMG_INPUT A3
+
 
 //#define ss 5
 //#define rst 14
