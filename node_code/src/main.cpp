@@ -83,6 +83,7 @@ void errorLoRaBegin();
 void LEDLow();
 void LEDHigh();
 void LEDsendingMessage();
+void LEDmeasuring();
 //------------------------------------------------------
 
 
@@ -115,6 +116,7 @@ void setup() {
 void loop() {
   performMeasurementsWithSleepInBetween();
   //sendMeasurementsProper();
+  LEDsendingMessage();
   sendMeasurementsString();
 }
 
@@ -451,5 +453,14 @@ void LEDsendingMessage(){
     customDelay(100);
     LEDLow();
     customDelay(100);
+  }
+}
+
+void LEDmeasuring(){
+  for(int i = 0; i<5; i++){
+    LEDHigh();
+    customDelay(50*i);
+    LEDLow();
+    customDelay(50*i);
   }
 }
