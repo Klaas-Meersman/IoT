@@ -79,7 +79,7 @@ bool checkPosture(int);
 
 void customDelay(unsigned long);
 
-//LED signs-------------------------------------------
+//LED signs
 void errorLoRaBegin();
 void LEDLow();
 void LEDHigh();
@@ -433,7 +433,6 @@ void customDelay(unsigned long delayTime) {
 
 
 //LED ERROR SIGNS
-//incase LoRa.begin() fails, LED will stay high as long as it fails
 void errorLoRaBegin(){
   for(int i = 0; i < 5; i++){
     LEDLow();
