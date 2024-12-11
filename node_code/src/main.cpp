@@ -183,8 +183,8 @@ unsigned long waitForGateAndGetInterval() {
   Serial.println(" until gate is ready");
   //set led low, initiating is done
   LEDLow();
-  //LowPower.deepSleep(setupOfGateLeft);
-  customDelay(setupOfGateLeft);
+  LowPower.deepSleep(setupOfGateLeft);
+  //customDelay(setupOfGateLeft);
   Serial.println("Gate is ready");
   return interval;
 }
@@ -251,8 +251,8 @@ void performMeasurementsWithSleepInBetween(){
       bufferToSend[i + 2 * measurementUnitsBeforeSend] = measurementUnitSkinTemperature(amountOfSkinTempMeasurementsPerUnit);
       bufferToSend[i + 3 * measurementUnitsBeforeSend] = measurementUnitMuscleTension(amountOfMuscleTensionMeasurementsPerUnit);
       LEDsendingMessage();
-      //LowPower.deepSleep(deltaMeasurementUnitsInMilis -  waistedTimeMeasuringHR);
-      customDelay(deltaMeasurementUnitsInMilis - waistedTimeMeasuringHR);
+      LowPower.deepSleep(deltaMeasurementUnitsInMilis -  waistedTimeMeasuringHR);
+      //customDelay(deltaMeasurementUnitsInMilis - waistedTimeMeasuringHR);
       
   }
 }
