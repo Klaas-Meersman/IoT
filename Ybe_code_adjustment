@@ -1,1 +1,38 @@
+bool checkPosture(int envelope) {
+    if (envelope > badPostureThreshold) {
+        return true; // Bad posture detected
+    }
+    return false; // Good posture
+}
 
+
+void calibrateSensor() {
+    unsigned long startTime = millis();
+    int filteredSignal;
+    int evelopeValue;
+    int minEvelope = 9999;
+    int maxEvelope = 0;
+    while (millis() - startTime < calibrationTime) {
+        int rawValue = analogRead(EMG_Input);
+
+        filteredSignal = EMGFilter(rawValue);
+        evelopeValue = getEnvelop(abs(filteredSignal));
+        
+        // Update baseline (minimum) and max values
+        if (evelopeValue < minEvelope) {
+            minEvelope = evelopeValue;
+        }
+        if (evelopeValue > maxEvelope) {
+            maxEvelope = evelopeValue;
+        }
+        
+        // Display progress
+        Serial.print("Calibrating... Min: ");
+        Serial.print(minEvelope);
+        Serial.print(" Max: ");
+        Serial.println(maxEvelope);
+        delay(5);
+    }
+    int envelopeRange = maxEvelope - minEvelope;
+    badPostureThreshold = minEvelope + (0.1 * envelopeRange);
+}
