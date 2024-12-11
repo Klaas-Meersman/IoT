@@ -334,34 +334,35 @@ float measurementUnitMuscleTension(byte size) {
 }
 
 //EMG related functions
-bool calibrateEMG() {
-  const int calibrationTime = 10000; 
-  int baselineValue = 1023; 
-  int maxValue = 0;  
-  unsigned long startTime = millis();
-  Serial.print("Calibrating EMG for " + String(calibrationTime/1000));
-  Serial.println("seconds.");
-  while (millis() - startTime < calibrationTime) {
-    int readValue = analogRead(EMG_INPUT);
+void calibrateSensor() {
+    unsigned long startTime = millis();
+    int filteredSignal;
+    int evelopeValue;
+    int minEvelope = 9999;
+    int maxEvelope = 0;
+    while (millis() - startTime < calibrationTime) {
+        int rawValue = analogRead(EMG_Input);
 
-    // Update baseline (minimum) and max values
-    if (readValue < baselineValue) {
-      baselineValue = readValue;
+        filteredSignal = EMGFilter(rawValue);
+        evelopeValue = getEnvelop(abs(filteredSignal));
+        
+        // Update baseline (minimum) and max values
+        if (evelopeValue < minEvelope) {
+            minEvelope = evelopeValue;
+        }
+        if (evelopeValue > maxEvelope) {
+            maxEvelope = evelopeValue;
+        }
+        
+        // Display progress
+        Serial.print("Calibrating... Min: ");
+        Serial.print(minEvelope);
+        Serial.print(" Max: ");
+        Serial.println(maxEvelope);
+        delay(5);
     }
-    if (readValue > maxValue) {
-      maxValue = readValue;
-    }
-
-    // Display progress
-    //Serial.print("Calibrating... Min: ");
-    //Serial.print(baselineValue);
-    //Serial.print(" Max: ");
-    //Serial.println(maxValue);
-    delay(5);
-  }
-  int signalRange = maxValue - baselineValue;
-  badPostureThreshold = baselineValue + (0.1 * signalRange); //is never actually used, was meant to be used in checkPosture instead of 30
-  return true; //calibration is done
+    int envelopeRange = maxEvelope - minEvelope;
+    badPostureThreshold = minEvelope + (0.1 * envelopeRange);
 }
 
 float EMGFilter(float input){
@@ -406,7 +407,7 @@ int getEnvelop(int abs_emg){
 }
 
 bool checkPosture(int envelope) {
-    if (envelope > 30) {
+    if (envelope > badPostureThreshold) {
         return true; // Bad posture detected
     }
     return false; // Good posture
