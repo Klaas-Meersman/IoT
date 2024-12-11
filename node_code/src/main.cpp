@@ -70,7 +70,7 @@ float measurementUnitSkinTemperature(byte);
 float measurementUnitMuscleTension(byte);
 
 //EMG related functions
-bool calibrateEMG();
+void calibrateEMG();
 float measurementUnitMuscleTension(byte);
 float EMGFilter(float);
 int getEnvelop(int);
