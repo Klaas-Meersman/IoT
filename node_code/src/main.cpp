@@ -11,12 +11,11 @@
 #define GSR_INPUT A0
 #define EMG_INPUT A3
 
-
 //#define ss 5
 //#define rst 14
 //#define dio0 2
 
-int errorLED = 6;
+const int errorLED = 6;
 
 //------------------------------------------HARDWARE declarations--------------------------------
 MAX30105 heartRateSensor;
@@ -253,7 +252,7 @@ void performMeasurementsWithSleepInBetween(){
       bufferToSend[i + 3 * measurementUnitsBeforeSend] = measurementUnitMuscleTension(amountOfMuscleTensionMeasurementsPerUnit);
       LEDsendingMessage();
       //LowPower.deepSleep(deltaMeasurementUnitsInMilis -  waistedTimeMeasuringHR);
-      customDelay(deltaMeasurementUnitsInMilis- waistedTimeMeasuringHR );
+      customDelay(deltaMeasurementUnitsInMilis - waistedTimeMeasuringHR);
       
   }
 }
@@ -310,7 +309,6 @@ float measurementUnitHeartRateSensor(byte size){ //a unit is a measurement of x 
   return sum/size;
 }
 
-//still needs testing
 float measurementUnitSkinConductanceSensor(byte size){
   float sum;
   for(int i = 0;i<size;i++){
@@ -319,7 +317,6 @@ float measurementUnitSkinConductanceSensor(byte size){
   return sum/size;
 }
 
-//not sure if this works perfectly
 float measurementUnitSkinTemperature(byte size){
   float sum;
   for(int i = 0; i<size;i++){
