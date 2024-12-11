@@ -43,7 +43,7 @@ const byte amountOfHeartRateMeasurementsPerUnit = 5;
 const byte amountOfSkinConductanceMeasurementsPerUnit = 1;
 const byte amountOfSkinTempMeasurementsPerUnit = 1;
 const byte amountOfMuscleTensionMeasurementsPerUnit = 1;
-const int deltaMeasurementUnitsInSec = 30; // seconds
+const int deltaMeasurementUnitsInSec = 60; // seconds
 unsigned long deltaSendToGateInMilis = -1; //this is set by initialziing with gate
 const int amountOfSensors = 5; //heart rate, skin conductance, skin temperature, muscle tension
 //********************************************************************************
@@ -176,8 +176,8 @@ unsigned long waitForGateAndGetInterval() {
   }
   Serial.print("We wait " + String(setupOfGateLeft));
   Serial.println(" until gate is ready");
-  LowPower.deepSleep(setupOfGateLeft);
-  //customDelay(setupOfGateLeft);
+  //LowPower.deepSleep(setupOfGateLeft);
+  customDelay(setupOfGateLeft);
   Serial.println("Gate is ready");
   return interval;
 }
@@ -239,13 +239,13 @@ void performMeasurementsWithSleepInBetween(){
   //note that the bufferToSend is a float array, so we can store the heart rate, skin conductance.... in the same array, thas why we multiply by 2,3,4
   //the buffer first stores #measurementUnitsBeforeSend heart rate measurements, then #measurementUnitsBeforeSend skin conductance measurements
   for(int i = 0; i < measurementUnitsBeforeSend; i++){
-      bufferToSend[i] = measurementUnitHeartRateSensor(amountOfHeartRateMeasurementsPerUnit);
+      //bufferToSend[i] = measurementUnitHeartRateSensor(amountOfHeartRateMeasurementsPerUnit);
       bufferToSend[i + measurementUnitsBeforeSend] = measurementUnitSkinConductanceSensor(amountOfSkinConductanceMeasurementsPerUnit);
       bufferToSend[i + 2 * measurementUnitsBeforeSend] = measurementUnitSkinTemperature(amountOfSkinTempMeasurementsPerUnit);
       bufferToSend[i + 3 * measurementUnitsBeforeSend] = measurementUnitMuscleTension(amountOfMuscleTensionMeasurementsPerUnit);
 
-      LowPower.deepSleep(deltaMeasurementUnitsInMilis -  waistedTimeMeasuringHR);
-      //customDelay(deltaMeasurementUnitsInMilis- waistedTimeMeasuringHR );
+      //LowPower.deepSleep(deltaMeasurementUnitsInMilis -  waistedTimeMeasuringHR);
+      customDelay(deltaMeasurementUnitsInMilis- waistedTimeMeasuringHR );
   }
 }
 
