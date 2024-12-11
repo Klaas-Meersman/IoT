@@ -16,7 +16,7 @@
 //#define rst 14
 //#define dio0 2
 
-//int Errorled = 6;
+int errorLED = 6;
 
 //------------------------------------------HARDWARE declarations--------------------------------
 MAX30105 heartRateSensor;
@@ -43,9 +43,9 @@ const byte amountOfHeartRateMeasurementsPerUnit = 5;
 const byte amountOfSkinConductanceMeasurementsPerUnit = 1;
 const byte amountOfSkinTempMeasurementsPerUnit = 1;
 const byte amountOfMuscleTensionMeasurementsPerUnit = 1;
-const int deltaMeasurementUnitsInSec = 6; // seconds //default: 60sec
+const int deltaMeasurementUnitsInSec = 60; // seconds //default: 60sec
 unsigned long deltaSendToGateInMilis = -1; //this is set by initialziing with gate
-const int amountOfSensors = 5; //heart rate, skin conductance, skin temperature, muscle tension
+const int amountOfSensors = 4; //heart rate, skin conductance, skin temperature, muscle tension
 //********************************************************************************
 //*************DON'T CHANGE CALCULATED PARAMETERS*********************************
 const int MAXBufferSize = 240;
@@ -79,9 +79,11 @@ bool checkPosture(int);
 
 void customDelay(unsigned long);
 
-//error signs
-void ErrorLoRaBegin();
-void setErrorLEDLow();
+//LED signs-------------------------------------------
+void errorLoRaBegin();
+void LEDLow();
+void LEDHigh();
+void LEDsendingMessage();
 //------------------------------------------------------
 
 
@@ -89,7 +91,9 @@ void setup() {
   Serial.begin(BAUD_RATE);
   pinMode(GSR_INPUT, INPUT);
   pinMode(EMG_INPUT, INPUT);
-  //calibrateEMG(); 
+  pinMode(errorLED, OUTPUT);
+  LEDHigh();
+  calibrateEMG(); 
 
   heartRateSensor.begin(Wire, I2C_SPEED_FAST); // Use default I2C port, 400kHz speed
   heartRateSensor.setup();                     // Configure sensor with default settings
@@ -103,7 +107,7 @@ void setup() {
 
   while (!LoRa.begin(868E6)) {
     Serial.println("Starting LoRa failed!");
-    ErrorLoRaBegin();
+    errorLoRaBegin();
   }
 
   deltaSendToGateInMilis = initWithGate();
@@ -157,6 +161,8 @@ unsigned long waitForGateAndGetInterval() {
     }
   }
 
+
+
   //parse response to get ID, interval and setupOfGateLeft
   if (response.length() > 0) {
     int firstComma = response.indexOf(',');
@@ -176,6 +182,8 @@ unsigned long waitForGateAndGetInterval() {
   }
   Serial.print("We wait " + String(setupOfGateLeft));
   Serial.println(" until gate is ready");
+  //set led low, initiating is done
+  LEDLow();
   //LowPower.deepSleep(setupOfGateLeft);
   customDelay(setupOfGateLeft);
   Serial.println("Gate is ready");
@@ -239,11 +247,11 @@ void performMeasurementsWithSleepInBetween(){
   //note that the bufferToSend is a float array, so we can store the heart rate, skin conductance.... in the same array, thas why we multiply by 2,3,4
   //the buffer first stores #measurementUnitsBeforeSend heart rate measurements, then #measurementUnitsBeforeSend skin conductance measurements
   for(int i = 0; i < measurementUnitsBeforeSend; i++){
-      //bufferToSend[i] = measurementUnitHeartRateSensor(amountOfHeartRateMeasurementsPerUnit);
+      bufferToSend[i] = measurementUnitHeartRateSensor(amountOfHeartRateMeasurementsPerUnit);
       bufferToSend[i + measurementUnitsBeforeSend] = measurementUnitSkinConductanceSensor(amountOfSkinConductanceMeasurementsPerUnit);
       bufferToSend[i + 2 * measurementUnitsBeforeSend] = measurementUnitSkinTemperature(amountOfSkinTempMeasurementsPerUnit);
       bufferToSend[i + 3 * measurementUnitsBeforeSend] = measurementUnitMuscleTension(amountOfMuscleTensionMeasurementsPerUnit);
-
+      LEDsendingMessage();
       //LowPower.deepSleep(deltaMeasurementUnitsInMilis -  waistedTimeMeasuringHR);
       customDelay(deltaMeasurementUnitsInMilis- waistedTimeMeasuringHR );
       
@@ -426,11 +434,28 @@ void customDelay(unsigned long delayTime) {
 
 //LED ERROR SIGNS
 //incase LoRa.begin() fails, LED will stay high as long as it fails
-void ErrorLoRaBegin(){
-  //digitalWrite(Errorled, HIGH);
-  //customDelay(2000);
+void errorLoRaBegin(){
+  for(int i = 0; i < 5; i++){
+    LEDLow();
+    customDelay(500);
+    LEDHigh();
+    customDelay(500);
+  }
 }
 
-void setErrorLEDLow(){
-  //digitalWrite(Errorled, LOW);
+void LEDLow(){
+  digitalWrite(Errorled, HIGH);
+}
+
+void LEDHigh(){
+  digitalWrite(Errorled, LOW);
+}
+
+void LEDsendingMessage(){
+  for(int i = 0; i < 5; i++){
+    LEDLow();
+    customDelay(100);
+    LEDHigh();
+    customDelay(100);
+  }
 }
