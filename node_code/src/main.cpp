@@ -457,10 +457,11 @@ void LEDsendingMessage(){
 }
 
 void LEDmeasuring(){
-  for(int i = 0; i<10; i++){
     LEDHigh();
-    customDelay(25*i);
+    customDelay(200);
     LEDLow();
-    customDelay(25*i);
-  }
+    customDelay(200);
+    LEDHigh();
+    customDelay(50);
+    LEDLow();
 }
