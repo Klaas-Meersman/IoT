@@ -1,0 +1,28 @@
+body temp measurement:
+https://eu.mouser.com/new/analog-devices/maxim-max30205-sensor/
+https://www.mouser.be/c/semiconductors/sensor-ics/board-mount-temperature-sensors/?series=MAX30205&srsltid=AfmBOopJmiuyxH7FY-2aYhuXVzFZ27V6ZEjSQtEj9QvXUq83HLoRbkK-
+https://circuitdigest.com/microcontroller-projects/arduino-max30205-human-body-temperature-measurement
+
+
+Features
+
+    High Accuracy and Low-Voltage Operation Aids Designers in Meeting Error and Power Budgets
+        0.1°C Accuracy (37°C to 39°C)
+        16-Bit (0.00390625°C) Temperature Resolution
+        2.7V to 3.3V Supply Voltage Range
+    One-Shot and Shutdown Modes Help Reduce Power Usage
+
+    600µA (typ) Operating Supply Current
+    Digital Functions Make Integration Easier into Any System
+        Selectable Timeout Prevents Bus Lockup
+        Separate Open-Drain OS Output Operates as Interrupt or Comparator/Thermostat Output
+
+
+        
+        
+        
+        
+page 6:
+https://pdfserv.maximintegrated.com/en/an/MAXREFDES101-User-Guide.pdf
+
+

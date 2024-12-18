@@ -1,0 +1,22 @@
+gaat niet speculatief excuten
+
+totdat vorige WRPKRU zijn gecompleted
+
+er wordt een loadfence toegepast.
+
+lfence implementeren, om te zien of dat een verschil maakt. of dat dit de oorzaak waarom MPK traag is
+
+QEMU doet constant TLB flushes => zotte w/e implementatie
+
+
+https://arxiv.org/pdf/1807.03757
+
+
+
+hoe aanpassingen maken?
+kunnen userspace programs runnen zonder het booten van een full operating system
+https://wiki.osdev.org/Paging
+we gaan kernel space support ook nodig hebben, voor het de PTE aan te kunne naanpassen
+
+https://github.com/orgs/gem5/discussions	-> 	voor vragen
+

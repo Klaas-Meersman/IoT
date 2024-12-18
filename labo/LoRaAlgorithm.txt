@@ -1,0 +1,14 @@
+LORA PREAMBLE is 400ms
+
+1) gateway ON
+2) NODES ON + TX
+3) GATEWAY RECEIVES (LTE confirms)
+4) NODES PROBABLY KEEP LISTENING UNTIL 
+4) WAIT ON GUI
+5) GUI sends timestamps
+6) node sends data
+7) GUI sends ACK+TIMESTAMPS
+
+=> GUI controleert alles
+
+

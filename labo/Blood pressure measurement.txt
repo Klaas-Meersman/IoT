@@ -1,0 +1,26 @@
+Blood pressure measurement options:
+
+	
+jail break : https://www.iotm2mcouncil.org/iot-library/news/connected-health-news/smart-meter-connects-blood-pressure-monitoring
+	=> this might distract the wearer as the cuff inflates, or decrease blood flow to one of the arms
+
+
+
+
+
+there is research about estimating blood with a camera on the fingertip [https://www.nature.com/articles/s41746-022-00629-2] The fingertip is not an option as the musician obviously need their fingertips. It might however be an option to attach a small camera to the vessel of an arm. Precise location is needed though.
+
+This paper also states that we could get the blood pressure from vessels in the face.
+
+You can also measure the heartbeat from a phonodiagram. This is not an option since instrument will make to much noise literally.
+'Acquiring SCG data from the chest
+
+Unlike phonocardiography, seismocardiography (SCG) does not rely on the heart sound signal but on the vibrations caused by the cardiac cycle. These vibrations can be measured using a smartphone’s accelerometer. According to Wang et al.18, the SCG is preferable to the PCG signal, as it actually captures the opening of the heart valves and is thus a better reference for the ejection of blood into the artery.
+=> an accelormeter on the heart/chest seems the best option. it has to be very precise. and their is the noise of the body movements ofcourse
+
+found one, if not usable for me. it is usable for the other team: https://www.st.com/en/mems-and-sensors/lis3dh.html
+=> low power, high resolution mode, I2C, SPI, ...
+
+
+
+
