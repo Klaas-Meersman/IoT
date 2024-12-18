@@ -1,0 +1,95 @@
+//
+// !!! WARNING !!! AUTO-GENERATED FILE!
+// PLEASE DO NOT MODIFY IT AND USE "platformio.ini":
+// https://docs.platformio.org/page/projectconf/section_env_build.html#build-flags
+//
+{
+    "configurations": [
+        {
+            "name": "PlatformIO",
+            "includePath": [
+                "/home/klaas/Documenten/PlatformIO/Projects/TeamStress/include",
+                "/home/klaas/Documenten/PlatformIO/Projects/TeamStress/src",
+                "/home/klaas/Documenten/PlatformIO/Projects/TeamStress/.pio/libdeps/mkrwan1310/SparkFun TMP102 Breakout/src",
+                "/home/klaas/Documenten/PlatformIO/Projects/TeamStress/.pio/libdeps/mkrwan1310/Arduino Low Power/src",
+                "/home/klaas/Documenten/PlatformIO/Projects/TeamStress/.pio/libdeps/mkrwan1310/RTCZero/src",
+                "/home/klaas/Documenten/PlatformIO/Projects/TeamStress/.pio/libdeps/mkrwan1310/SparkFun MAX3010x Pulse and Proximity Sensor Library/src",
+                "/home/klaas/.platformio/packages/framework-arduino-samd/libraries/Wire",
+                "/home/klaas/.platformio/packages/framework-arduino-samd/cores/arduino/api/deprecated",
+                "/home/klaas/.platformio/packages/framework-arduino-samd/cores/arduino/api/deprecated-avr-comp",
+                "/home/klaas/.platformio/packages/framework-cmsis/CMSIS/Include",
+                "/home/klaas/.platformio/packages/framework-cmsis-atmel/CMSIS/Device/ATMEL",
+                "/home/klaas/.platformio/packages/framework-arduino-samd/cores/arduino",
+                "/home/klaas/.platformio/packages/framework-arduino-samd/variants/mkrwan1300",
+                "/home/klaas/.platformio/packages/framework-arduino-samd/libraries/HID",
+                "/home/klaas/.platformio/packages/framework-arduino-samd/libraries/I2S/src",
+                "/home/klaas/.platformio/packages/framework-arduino-samd/libraries/SAMD_AnalogCorrection/src",
+                "/home/klaas/.platformio/packages/framework-arduino-samd/libraries/SAMD_BootloaderUpdater/src",
+                "/home/klaas/.platformio/packages/framework-arduino-samd/libraries/SBU/src",
+                "/home/klaas/.platformio/packages/framework-arduino-samd/libraries/SDU/src",
+                "/home/klaas/.platformio/packages/framework-arduino-samd/libraries/SFU/src",
+                "/home/klaas/.platformio/packages/framework-arduino-samd/libraries/SNU/src",
+                "/home/klaas/.platformio/packages/framework-arduino-samd/libraries/SPI",
+                "/home/klaas/.platformio/packages/framework-arduino-samd/libraries/SSU/src",
+                "/home/klaas/.platformio/packages/framework-arduino-samd/libraries/USBHost/src",
+                ""
+            ],
+            "browse": {
+                "limitSymbolsToIncludedHeaders": true,
+                "path": [
+                    "/home/klaas/Documenten/PlatformIO/Projects/TeamStress/include",
+                    "/home/klaas/Documenten/PlatformIO/Projects/TeamStress/src",
+                    "/home/klaas/Documenten/PlatformIO/Projects/TeamStress/.pio/libdeps/mkrwan1310/SparkFun TMP102 Breakout/src",
+                    "/home/klaas/Documenten/PlatformIO/Projects/TeamStress/.pio/libdeps/mkrwan1310/Arduino Low Power/src",
+                    "/home/klaas/Documenten/PlatformIO/Projects/TeamStress/.pio/libdeps/mkrwan1310/RTCZero/src",
+                    "/home/klaas/Documenten/PlatformIO/Projects/TeamStress/.pio/libdeps/mkrwan1310/SparkFun MAX3010x Pulse and Proximity Sensor Library/src",
+                    "/home/klaas/.platformio/packages/framework-arduino-samd/libraries/Wire",
+                    "/home/klaas/.platformio/packages/framework-arduino-samd/cores/arduino/api/deprecated",
+                    "/home/klaas/.platformio/packages/framework-arduino-samd/cores/arduino/api/deprecated-avr-comp",
+                    "/home/klaas/.platformio/packages/framework-cmsis/CMSIS/Include",
+                    "/home/klaas/.platformio/packages/framework-cmsis-atmel/CMSIS/Device/ATMEL",
+                    "/home/klaas/.platformio/packages/framework-arduino-samd/cores/arduino",
+                    "/home/klaas/.platformio/packages/framework-arduino-samd/variants/mkrwan1300",
+                    "/home/klaas/.platformio/packages/framework-arduino-samd/libraries/HID",
+                    "/home/klaas/.platformio/packages/framework-arduino-samd/libraries/I2S/src",
+                    "/home/klaas/.platformio/packages/framework-arduino-samd/libraries/SAMD_AnalogCorrection/src",
+                    "/home/klaas/.platformio/packages/framework-arduino-samd/libraries/SAMD_BootloaderUpdater/src",
+                    "/home/klaas/.platformio/packages/framework-arduino-samd/libraries/SBU/src",
+                    "/home/klaas/.platformio/packages/framework-arduino-samd/libraries/SDU/src",
+                    "/home/klaas/.platformio/packages/framework-arduino-samd/libraries/SFU/src",
+                    "/home/klaas/.platformio/packages/framework-arduino-samd/libraries/SNU/src",
+                    "/home/klaas/.platformio/packages/framework-arduino-samd/libraries/SPI",
+                    "/home/klaas/.platformio/packages/framework-arduino-samd/libraries/SSU/src",
+                    "/home/klaas/.platformio/packages/framework-arduino-samd/libraries/USBHost/src",
+                    ""
+                ]
+            },
+            "defines": [
+                "PLATFORMIO=60116",
+                "ARDUINO_SAMD_MKRWAN1310",
+                "__SAMD21G18A__",
+                "USE_ARDUINO_MKR_PIN_LAYOUT",
+                "USE_BQ24195L_PMIC",
+                "VERY_LOW_POWER",
+                "ARDUINO=10805",
+                "F_CPU=48000000L",
+                "USBCON",
+                "USB_VID=0x2341",
+                "USB_PID=0x8059",
+                "USB_PRODUCT=\"Arduino MKR WAN 1310\"",
+                "USB_MANUFACTURER=\"Arduino\"",
+                "ARDUINO_ARCH_SAMD",
+                ""
+            ],
+            "cStandard": "gnu11",
+            "cppStandard": "gnu++11",
+            "compilerPath": "/home/klaas/.platformio/packages/toolchain-gccarmnoneeabi/bin/arm-none-eabi-gcc",
+            "compilerArgs": [
+                "-mcpu=cortex-m0plus",
+                "-mthumb",
+                ""
+            ]
+        }
+    ],
+    "version": 4
+}
